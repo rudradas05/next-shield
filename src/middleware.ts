@@ -2,7 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
+  // "/dashboard(.*)",
   "/verify(.*)",
 ]);
 
@@ -13,10 +13,15 @@ export default clerkMiddleware(async(auth, req) => {
   if (isProtectedRoute(req) && !userId) {
     return NextResponse.redirect(new URL("/auth/sign-in", req.url));
   }
+  if (userId && (req.nextUrl.pathname.startsWith("/auth/sign-in") || req.nextUrl.pathname.startsWith("/auth/sign-up"))) {
+    const dashboardUrl = new URL("/dashboard", req.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
 
   // Otherwise continue
   return NextResponse.next();
-});
+}
+);
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
@@ -25,3 +30,4 @@ export const config = {
     '/(api|trpc)(.*)',
   ],
 };
+

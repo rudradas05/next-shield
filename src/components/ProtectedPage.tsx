@@ -10,14 +10,14 @@ export default function ProtectedPage({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      router.push("/sign-in");
+      router.push("/auth/sign-in");
       return;
     }
 
     const checkVerified = async () => {
       if (!user?.primaryEmailAddress?.emailAddress) return;
 
-      const res = await fetch("/api/auth/check-verify", {
+      const res = await fetch("/api/check-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
