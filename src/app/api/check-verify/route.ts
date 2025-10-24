@@ -25,32 +25,41 @@
 //   }
 // }
 
-
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) { // <-- THE FIX IS HERE
-  try {
-     const { userId } = await auth();
+export async function POST(req: Request) {
+  // <-- THE FIX IS HERE
+  try {
+    const { userId } = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ verified: false, error: "No userId" }, { status: 401 });
-    }
+    if (!userId) {
+      return NextResponse.json(
+        { verified: false, error: "No userId" },
+        { status: 401 }
+      );
+    }
 
-    const user = await db.user.findUnique({
-      where: { clerkId: userId },
-    });
+    const user = await db.user.findUnique({
+      where: { clerkId: userId },
+    });
 
-    if (!user) {
-      // User exists in Clerk but not in your DB yet.
+    if (!user) {
+      // User exists in Clerk but not in your DB yet.
       // This happens if the webhook is delayed.
-      return NextResponse.json({ verified: false, error: "User not synced yet" }, { status: 404 });
-    }
+      return NextResponse.json(
+        { verified: false, error: "User not synced yet" },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json({ verified: user.isVerified });
-  } catch (err) {
-    console.error("❌ check-verify route error:", err);
-    return NextResponse.json({ verified: false, error: "Internal Server Error" }, { status: 500 });
-  }
+    return NextResponse.json({ verified: user.isVerified });
+  } catch (err) {
+    console.error("❌ check-verify route error:", err);
+    return NextResponse.json(
+      { verified: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
