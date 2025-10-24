@@ -1,64 +1,39 @@
-// import { auth } from "@clerk/nextjs/server";
-// import { db } from "@/lib/db";
-// import { NextResponse } from "next/server";
-
-// export async function GET() {
-//   try {
-//     const { userId } =await  auth();
-
-//     if (!userId) {
-//       return NextResponse.json({ verified: false, error: "No userId" }, { status: 401 });
-//     }
-
-//     const user = await db.user.findUnique({
-//       where: { clerkId: userId },
-//     });
-
-//     if (!user) {
-//       return NextResponse.json({ verified: false, error: "User not found" }, { status: 404 });
-//     }
-
-//     return NextResponse.json({ verified: user.isVerified });
-//   } catch (err) {
-//     console.error("❌ check-verify route error:", err);
-//     return NextResponse.json({ verified: false, error: "Internal Server Error" }, { status: 500 });
-//   }
-// }
-
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  // <-- THE FIX IS HERE
   try {
+    // Authenticate user via Clerk
     const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json(
-        { verified: false, error: "No userId" },
+        { isVerified: false, error: "Unauthorized: Missing Clerk userId" },
         { status: 401 }
       );
     }
 
+    // Fetch user from Prisma database using Clerk ID
     const user = await db.user.findUnique({
       where: { clerkId: userId },
+      select: { isVerified: true },
     });
 
     if (!user) {
-      // User exists in Clerk but not in your DB yet.
-      // This happens if the webhook is delayed.
+      // User not yet created in DB (webhook delay)
       return NextResponse.json(
-        { verified: false, error: "User not synced yet" },
+        { isVerified: false, error: "User not synced yet. Try again in a moment." },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ verified: user.isVerified });
-  } catch (err) {
-    console.error("❌ check-verify route error:", err);
+    // Return verification status
+    return NextResponse.json({ isVerified: user.isVerified });
+  } catch (error) {
+    console.error("❌ /api/check-verify route error:", error);
     return NextResponse.json(
-      { verified: false, error: "Internal Server Error" },
+      { isVerified: false, error: "Internal Server Error" },
       { status: 500 }
     );
   }

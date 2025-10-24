@@ -1,97 +1,3 @@
-// "use client";
-// import { useUser } from "@clerk/nextjs";
-// import { useEffect, useState } from "react";
-// import { useRouter } from "next/navigation";
-
-// export default function Dashboard() {
-//   const { isSignedIn, user, isLoaded } = useUser();
-//   const router = useRouter();
-//   const [verified, setVerified] = useState<boolean | null>(null);
-
-//   useEffect(() => {
-//     if (isLoaded && !isSignedIn) {
-//       router.push("/sign-in");
-//       return;
-//     }
-
-//     const checkVerified = async () => {
-//       if (!user?.primaryEmailAddress?.emailAddress) return;
-
-//       const res = await fetch("/api/auth/check-verify", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
-//       });
-//       const data = await res.json();
-//       if (data.isVerified) setVerified(true);
-//       else router.push("/verify"); // optional verify page
-//     };
-
-//     checkVerified();
-//   }, [isLoaded, isSignedIn, user, router]);
-
-//   if (!isSignedIn || verified === null) return <div>Loading...</div>;
-
-//   return (
-//     <main className="flex flex-col items-center justify-center min-h-screen">
-//       <h1 className="text-3xl font-bold text-green-600">✅ Dashboard</h1>
-//       <p>{user.fullName || user.primaryEmailAddress?.emailAddress}</p>
-//     </main>
-//   );
-// }
-
-
-// "use client";
-// import { useUser } from "@clerk/nextjs";
-// import { useEffect, useState } from "react";
-// import { useRouter } from "next/navigation";
-// import axios from "axios";
-// import ProtectedPage from "@/components/ProtectedPage";
-
-// export default function Dashboard() {
-//   const { isSignedIn, user, isLoaded } = useUser();
-//   const router = useRouter();
-//   const [verified, setVerified] = useState<boolean | null>(null);
-
-//   useEffect(() => {
-//     if (isLoaded && !isSignedIn) {
-//       router.push("/auth/sign-in");
-//       return;
-//     }
-
-//     const checkVerified = async () => {
-//       if (!user?.primaryEmailAddress?.emailAddress) return;
-
-//       try {
-//         const response = await axios.post("/api/check-verify", {
-//           email: user.primaryEmailAddress.emailAddress,
-//         });
-//         await axios.post("/api/webhooks");
-
-//         if (response.data.isVerified) {
-//           setVerified(true);
-//         } else {
-//           router.push("/verify"); // redirect to verification page
-//         }
-//       } catch (error) {
-//         console.error("Verification check failed:", error);
-//       }
-//     };
-
-//     checkVerified();
-//   }, [isLoaded, isSignedIn, user, router]);
-
-//   if (!isSignedIn || verified === null) return <div>Loading...</div>;
-
-//   return (
-//     <ProtectedPage>
-//     <main className="flex flex-col items-center justify-center min-h-screen">
-//       <h1 className="text-3xl font-bold text-green-600">✅ Dashboard</h1>
-//       <p>{user.fullName || user.primaryEmailAddress?.emailAddress}</p>
-//     </main>
-//     </ProtectedPage>
-//   );
-// }
 
 
 "use client";
@@ -102,44 +8,56 @@ import axios from "axios";
 import ProtectedPage from "@/components/ProtectedPage";
 
 export default function Dashboard() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, user, isLoaded } = useUser();
   const router = useRouter();
   const [verified, setVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
+    
     if (!isLoaded) return;
 
+    
     if (!isSignedIn) {
-      router.push("/auth/sign-in");
+      router.replace("/auth/sign-in");
       return;
     }
 
-    const checkVerification = async () => {
-      try {
-        const response = await axios.post("/api/check-verify");
+    
+    const checkVerified = async () => {
+      const email = user?.primaryEmailAddress?.emailAddress;
+      if (!email) return;
 
-        if (response.data.verified) {
+      try {
+        const response = await axios.post("/api/check-verify", { email });
+        const isVerified = response.data?.isVerified ?? false;
+
+        if (isVerified) {
           setVerified(true);
         } else {
-          router.push("/verify"); // redirect unverified users
+          router.replace("/verify");
         }
-      } catch (err) {
-        console.error("Verification check failed:", err);
-        setVerified(false);
-        router.push("/verify");
+      } catch (error) {
+        console.error("Verification check failed:", error);
       }
     };
 
-    checkVerification();
-  }, [isLoaded, isSignedIn, router]);
+    checkVerified();
+  }, [isLoaded, isSignedIn, user, router]);
 
-  if (!isLoaded || verified === null) return <div>Loading...</div>;
+  if (!isSignedIn || verified === null)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg">
+        Checking verification...
+      </div>
+    );
 
   return (
     <ProtectedPage>
       <main className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-3xl font-bold text-green-600">✅ Dashboard</h1>
-        <p>Welcome! Your account is verified.</p>
+        <p className="mt-2 text-gray-700">
+          Welcome, {user.fullName || user.primaryEmailAddress?.emailAddress}
+        </p>
       </main>
     </ProtectedPage>
   );
